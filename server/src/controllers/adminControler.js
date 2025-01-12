@@ -34,21 +34,13 @@ export const adminlogin = async (req, res) => {
         }
         console.log('login new user:', user);
         
-        const token = jwt.sign(
-            { userId: user._id },
-            process.env.JWT_SECRET,
-            { expiresIn: '24h' }
-          );
+        const token = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '1h' })
+        console.log('token>>>:', token);
 
-          res.cookie('token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 24 * 60 * 60 * 1000 // 24 hours
-          });
 
-        res.status(200)
-            .json({ success: true, message: "Login successful", user,token });
+        res.cookie('access_token', token, { httpOnly: true, maxAge: 3600000 })
+            .status(200)
+            .json({ success: true, message: "Login successful", user });
     } catch (error) {
         console.error("Login Error:", error);
         res.status(500).json({ success: false, message: "Internal Server Error" });
@@ -102,11 +94,7 @@ export const updateUser = async (req, res) => {
                 .status(400)
                 .json({ message: "Please provide a valid phone number." });
         }
-        if (!passwordRegex.test(password)) {
-            return res
-                .status(400)
-                .json({ message: "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character." });
-        }
+        
 
         const updateData = { username, email, phone, };
         if (password) {
@@ -183,9 +171,7 @@ export const createUser = async (req, res) => {
         if (existingUser) {
             return res.status(400).json({ message: "User already exists" });
         }
-        if (password.length < 6) {
-            return res.status(400).json({ message: "Password should be at least 6 characters" });
-        }
+        
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 

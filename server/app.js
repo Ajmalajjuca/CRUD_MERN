@@ -23,18 +23,19 @@ const PORT = process.env.PORT || 3000;
 const CORS_ORIGIN = process.env.CORS_ORIGIN || "http://localhost:5173";
 
 // Middleware
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static('public/uploads'));
-app.use(cookieParser());
 // app.use(express.static(path.join(__dirname, 'public/uploads')));
 
 // CORS Configuration
 const corsOptions = {
-  origin: CORS_ORIGIN,
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  origin: 'http://localhost:5173',
   credentials: true,
-  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['set-cookie']
 };
 
 app.use(cors(corsOptions));

@@ -63,9 +63,12 @@ export const register = async (req, res) => {
 
         console.log('created new user:', user);
 
-        res.status(201).json({
+
+        const token = jwt.sign({id: user._id, isAdmin: user.isAdmin},process.env.JWT_SECRET, { expiresIn: '1h' } )
+
+        res.cookie('access_token', token, { httpOnly: true, maxAge: 3600000  }).status(201).json({
             success: true, message: "User Registered successfully",
-            user, 
+            user, tokens: token
         });
 
     } catch (error) {
@@ -89,7 +92,6 @@ export const login = async (req, res) => {
         
 
         const user = await userModel.findOne({ email });
-
         if (!user) {
             return res.status(401).json({ success: false, message: "Invalid credentials" });
         }
@@ -102,10 +104,11 @@ export const login = async (req, res) => {
             return res.status(401).json({ success: false, message: "Invalid Password" });
         }
 
+        const token = jwt.sign({id: user._id, isAdmin: user.isAdmin},process.env.JWT_SECRET, { expiresIn: '1h' } )
 
-        res.status(200).json({
+        res.cookie('access_token', token, { httpOnly: true, maxAge: 3600000  }).status(200).json({
             success: true, message: "Login successful",
-            user,
+            user, isAdmin: user.isAdmin,
         });
         
 

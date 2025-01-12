@@ -12,16 +12,6 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 
 const AdminDashboard = () => {
-
-  const LogOut = async () => {
-    try {
-      await axios.get('http://localhost:3000/logout');
-      dispatch(logOut());
-    } catch (error) {
-      console.error('Error logging out', error);
-    }
-  }
-
   const { toast } = useToast();
   const [selectedUser, setSelectedUser] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,6 +23,8 @@ const AdminDashboard = () => {
 
   const [currentUser, setCurrentUser] = useState(null);
 
+  
+
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -43,6 +35,16 @@ const AdminDashboard = () => {
   const dispatch = useDispatch()
   const { users, error, user } = useSelector((state) => state.user);
   const profileImagePath = `http://localhost:3000/${user?.user?.profileImage}`
+
+  const LogOut = async () => {
+    try {
+      await axios.get('http://localhost:3000/logout');
+      dispatch(logOut());
+    } catch (error) {
+      console.error('Error logging out', error);
+      
+    }
+  }
 
   useEffect(() => {
     dispatch(fetchUsers());
@@ -173,7 +175,7 @@ const AdminDashboard = () => {
 
 
   const filteredUsers = useMemo(() => {
-    return users.filter(user =>
+    return users?.filter(user =>
       user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.phone.includes(searchTerm)
@@ -204,9 +206,11 @@ const AdminDashboard = () => {
 
             <button
               onClick={() => {
-                setCurrentUser({ username: '', email: '', phone: '', password: '', });
+                setCurrentUser(null);
+                setFormData({username: '', email: '', phone: '', password: '',})
                 setNewUser({ username: '', email: '', phone: '', password: '', });
                 setIsModalOpen(true);
+                setIsEditMode(false);
               }}
               className="bg-gradient-to-r from-[#252525] to-[#1e1e1e] hover:from-[#FCBF5E] hover:to-[#ffa500] text-[#FCBF5E] hover:text-black font-medium px-4 py-2 rounded-xl border border-[#2c2c2c] transition-all duration-300 flex items-center gap-2"
             >
@@ -252,7 +256,7 @@ const AdminDashboard = () => {
                   </a>
                 </li>
                 <li>
-                  <a className="text-[#d4d4d4] hover:bg-[#252525] hover:text-[#ffd700] transition-colors rounded-lg p-2"onClick={LogOut} >
+                  <a className="text-[#d4d4d4] hover:bg-[#252525] hover:text-[#ffd700] transition-colors rounded-lg p-2" onClick={LogOut}>
                     Logout
                   </a>
                 </li>
@@ -275,7 +279,7 @@ const AdminDashboard = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#2c2c2c]">
-              {filteredUsers.map((user) => (
+              {filteredUsers?.map((user) => (
                 <tr key={user._id} className="hover:bg-[#1a1a1a] transition-colors">
                   <td className="p-4">
                     <div className="flex items-center gap-3">
@@ -306,6 +310,7 @@ const AdminDashboard = () => {
                     <div className="flex gap-2">
                       <button
                         onClick={() => {
+                          
                           setNewUser(null);
                           setCurrentUser(user);
                           handleUpdate(user);
@@ -355,15 +360,7 @@ const AdminDashboard = () => {
                       <button
                         onClick={() => {
                           handelStatus(user._id, user.status);
-                          (loadingUsers[user._id] === false && toast({
-                            title: 'User status updated successfully',
-                            description: `User status has been updated to ${user.status === 'active' ? 'blocked' : 'active'}`,
-                            duration: 2000,
-                            position: "top-left",
-                            className: "bg-green-500 text-white border-[#FCBF5E]",
-
-                          })
-                          )
+                          
                         }}
                         className="p-2 hover:bg-[#252525] rounded-lg transition-colors text-[#FCBF5E]"
                       >

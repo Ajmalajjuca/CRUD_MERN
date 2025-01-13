@@ -55,8 +55,12 @@ const Login = () => {
       dispatch(signInSuccess(res.data));
     
 
-      {initialState === 'Admin Login' ? navigate('/admin/dashboard') :navigate('/dashboard');}
-      
+      if (initialState === 'Admin Login') {
+        navigate('/admin/dashboard', { replace: true });
+    } else {
+        navigate('/dashboard', { replace: true });
+    }
+          
     } catch (error) {
       if (error.response) {
         dispatch(signInFail(error.response.data.message));

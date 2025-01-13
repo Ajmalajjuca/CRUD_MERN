@@ -13,7 +13,7 @@ const AdminProfile = () => {
 
 
   const dispatch = useDispatch();
-  const { user, loading, error } = useSelector(state => state.user);
+  const { user, loading, error,token } = useSelector(state => state.user);
 
 
   const [formData, setFormData] = useState({
@@ -87,8 +87,6 @@ const AdminProfile = () => {
       }
 
 
-      const token = Cookie.get("access_token"); // Assuming 'userToken' is your cookie name
-      console.log("token:", token);
       const res = await axios.post('http://localhost:3000/updateProfile', data, {
         headers: {
           'Content-Type': 'multipart/form-data',

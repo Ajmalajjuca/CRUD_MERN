@@ -33,14 +33,27 @@ export const adminlogin = async (req, res) => {
             return res.status(401).json({ success: false, message: "Invalid Password" });
         }
         console.log('login new user:', user);
+        const token = jwt.sign({
+                    userId: user._id.toString(),
+                    email: user.email,
+                    isAdmin: user.isAdmin
+                },
+                    process.env.JWT_SECRET,
+                    { expiresIn: '30d' });
         
-        const token = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '1h' })
-        console.log('token>>>:', token);
+                res.cookie('jwt', token, {
+                    httpOnly: true,
+                    secure: process.env.NODE_ENV !== 'development',
+                    sameSite: 'strict',
+                    maxAge: 30 * 24 * 60 * 60 * 1000,
+                });
+        
+        console.log('admin login token>>>:', token);
+        res.status(200).json({
+            success: true, message: "Admin Login successful",
+            user, isAdmin: user.isAdmin, token
+        });
 
-
-        res.cookie('access_token', token, { httpOnly: true, maxAge: 3600000 })
-            .status(200)
-            .json({ success: true, message: "Login successful", user });
     } catch (error) {
         console.error("Login Error:", error);
         res.status(500).json({ success: false, message: "Internal Server Error" });
@@ -124,6 +137,8 @@ export const updateStatus = async (req, res) => {
         const { status } = req.body;
 
         const user = await userModel.findByIdAndUpdate(id);
+        console.log('uspaded user is::',user);
+        
 
 
         if (!user) {

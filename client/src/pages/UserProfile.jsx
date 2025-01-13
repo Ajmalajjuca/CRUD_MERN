@@ -10,6 +10,9 @@ const UserProfile = () => {
   const navigate = useNavigate();
 
   const data = useSelector((state) => state.user.user);
+  const token = useSelector((state) => state.user.token);
+  
+  
 
 
   const dispatch = useDispatch();
@@ -47,8 +50,17 @@ const UserProfile = () => {
 
   const handelDelete = async () => {
     try {
+      console.log('userId is:',formData.userId);
+      
       dispatch(deleteStart());
-      const res = await axios.post('http://localhost:3000/deleteProfile', { userId: formData.userId });
+      const res = await axios.post('http://localhost:3000/deleteProfile', { 
+      userId: formData.userId,
+     },{
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      }
+      );
       console.log('Profile deleted successfully', res.data);
       dispatch(deleteSuccess(res.data));
       console.log("res>>", res.data);
@@ -87,8 +99,6 @@ const UserProfile = () => {
       }
 
 
-      const token = Cookie.get("access_token"); // Assuming 'userToken' is your cookie name
-      console.log("token:", token);
       const res = await axios.post('http://localhost:3000/updateProfile', data, {
         headers: {
           'Content-Type': 'multipart/form-data',

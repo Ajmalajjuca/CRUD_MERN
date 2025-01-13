@@ -20,25 +20,18 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Environment Variables
 const PORT = process.env.PORT || 3000;
-const CORS_ORIGIN = process.env.CORS_ORIGIN || "http://localhost:5173";
 
 // Middleware
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static('public/uploads'));
-// app.use(express.static(path.join(__dirname, 'public/uploads')));
 
-// CORS Configuration
-const corsOptions = {
-  origin: 'http://localhost:5173',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  exposedHeaders: ['set-cookie']
-};
+app.use(cors({
+  origin: 'http://localhost:5173', // Your frontend origin
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Allowed HTTP methods
+  credentials: true // If you need to include cookies
+}));
 
-app.use(cors(corsOptions));
 
 // Routes
 app.use("/", userRoute);

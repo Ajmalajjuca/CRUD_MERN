@@ -7,6 +7,7 @@ const initialState = {
     error: null,
     loading: false,
     role: null,
+    token:null
 }
 
 export const fetchUsers = createAsyncThunk('user/fetchUsers', async (_, thunkAPI) => {
@@ -26,6 +27,7 @@ const userSlice = createSlice({
             state.loading = true
         },
         signInSuccess: (state, action) => {
+            state.token= action.payload.token
             state.loading = false
             state.user = action.payload.user
             state.role = action.payload.isAdmin ? 'admin' : 'user';

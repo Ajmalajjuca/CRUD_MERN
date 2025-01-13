@@ -3,6 +3,7 @@ import userModel from '../models/user.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken'
 import { emailRegex, nameRegex, passwordRegex, phoneRegex } from '../utils/regex.js';
+import createToken from '../utils/createToken.js';
 
 
 
@@ -57,19 +58,33 @@ export const register = async (req, res) => {
             phone: phone.trim(),
             password: hashedPassword,
         });
+
+        const token = jwt.sign({
+            userId: user._id.toString(),
+            email: user.email,
+            isAdmin: user.isAdmin
+        },
+            process.env.JWT_SECRET,
+            { expiresIn: '30d' });
+        console.log("created token>>", token);
+
+        res.cookie('jwt', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV !== 'development',
+            sameSite: 'strict',
+            maxAge: 30 * 24 * 60 * 60 * 1000,
+        });
         user.save();
 
-        
+
 
         console.log('created new user:', user);
 
-
-        const token = jwt.sign({id: user._id, isAdmin: user.isAdmin},process.env.JWT_SECRET, { expiresIn: '1h' } )
-
-        res.cookie('access_token', token, { httpOnly: true, maxAge: 3600000  }).status(201).json({
+        res.status(200).json({
             success: true, message: "User Registered successfully",
-            user, tokens: token
+            user, isAdmin: user.isAdmin, token
         });
+
 
     } catch (error) {
         console.error("Registration Error:", error);
@@ -79,7 +94,7 @@ export const register = async (req, res) => {
 
 export const login = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password, } = req.body;
 
         if (!email?.trim() || !password) {
             return res.status(400).json({ success: false, message: "Email and password are required" });
@@ -89,7 +104,7 @@ export const login = async (req, res) => {
                 .status(400)
                 .json({ message: "Please provide a valid email address." });
         }
-        
+
 
         const user = await userModel.findOne({ email });
         if (!user) {
@@ -104,13 +119,30 @@ export const login = async (req, res) => {
             return res.status(401).json({ success: false, message: "Invalid Password" });
         }
 
-        const token = jwt.sign({id: user._id, isAdmin: user.isAdmin},process.env.JWT_SECRET, { expiresIn: '1h' } )
 
-        res.cookie('access_token', token, { httpOnly: true, maxAge: 3600000  }).status(200).json({
-            success: true, message: "Login successful",
-            user, isAdmin: user.isAdmin,
+
+        const token = jwt.sign({
+            userId: user._id.toString(),
+            email: user.email,
+            isAdmin: user.isAdmin
+        },
+            process.env.JWT_SECRET,
+            { expiresIn: '30d' });
+        console.log("created token>>", token);
+
+        res.cookie('jwt', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV !== 'development',
+            sameSite: 'strict',
+            maxAge: 30 * 24 * 60 * 60 * 1000,
         });
-        
+
+
+        res.status(200).json({
+            success: true, message: "Login successful",
+            user, isAdmin: user.isAdmin, token
+        });
+
 
     } catch (error) {
         console.error("Login Error:", error);
@@ -134,6 +166,22 @@ export const updateProfile = async (req, res) => {
         if (!userId) {
             return res.status(400).json({ success: false, message: "User ID is required" });
         }
+        if (!emailRegex.test(email)) {
+            return res
+                .status(400)
+                .json({ message: "Please provide a valid email address." });
+        }
+        if (!nameRegex.test(username)) {
+            return res
+                .status(400)
+                .json({ message: "Please provide a valid username." });
+        }
+        if (!phoneRegex.test(phone)) {
+            return res
+                .status(400)
+                .json({ message: "Please provide a valid phone number." });
+        }
+        
 
         // Find the user by ID
         const user = await userModel.findById(userId);
@@ -164,6 +212,7 @@ export const updateProfile = async (req, res) => {
         console.log('updated user:', user);
 
 
+
         res.status(200).json({ success: true, message: "Profile updated successfully", user });
     } catch (error) {
         console.error("Update Profile Error:", error);
@@ -172,14 +221,18 @@ export const updateProfile = async (req, res) => {
 };
 
 export const deleteProfile = async (req, res) => {
+    
     try {
         const { userId } = req.body;
+        console.log('deldete profile innited:',userId);
 
         if (!userId) {
             return res.status(400).json({ success: false, message: "User ID is required" });
         }
 
         const user = await userModel.findById(userId);
+        console.log('deliting user is:',user);
+        
         if (!user) {
             return res.status(404).json({ success: false, message: "User not found" });
         }

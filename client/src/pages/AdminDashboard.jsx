@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useDispatch, useSelector } from 'react-redux';
 import { clearError, fetchUsers, logOut } from '../redux/user/userSlice';
 import { createUserStart, createUserSuccess, createUserFail, updateUserStart, updateUserSuccess, updateUserFail } from '../redux/user/userSlice';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const AdminDashboard = () => {
@@ -16,14 +16,15 @@ const AdminDashboard = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [loadingUsers, setLoadingUsers] = useState({});
+  const [loadingUsersLock, setLoadingUsersLock] = useState({});
+  const [loadingUsersTrash, setLoadingUsersTrash] = useState({});
   const [loading, setLoading] = useState(false);
   const [newUser, setNewUser] = useState()
   const [isEditMode, setIsEditMode] = useState(false);
 
   const [currentUser, setCurrentUser] = useState(null);
 
-  
+
 
   const [formData, setFormData] = useState({
     username: '',
@@ -32,9 +33,12 @@ const AdminDashboard = () => {
     isAdmin: false
   });
 
+
+
+
   const dispatch = useDispatch()
-  const { users, error, user } = useSelector((state) => state.user);
-  const profileImagePath = `http://localhost:3000/${user?.user?.profileImage}`
+  const { users, error, user, token } = useSelector((state) => state.user);
+  const profileImagePath = `http://localhost:3000/${user?.profileImage}`
 
   const LogOut = async () => {
     try {
@@ -42,7 +46,7 @@ const AdminDashboard = () => {
       dispatch(logOut());
     } catch (error) {
       console.error('Error logging out', error);
-      
+
     }
   }
 
@@ -53,41 +57,37 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     if (error) {
-        const timer = setTimeout(() => {
-            dispatch(clearError());
-        }, 3000); 
+      const timer = setTimeout(() => {
+        dispatch(clearError());
+      }, 3000);
 
-        return () => clearTimeout(timer);
+      return () => clearTimeout(timer);
     }
-}, [error, dispatch]);
+  }, [error, dispatch]);
 
   const handelStatus = async (id, status) => {
     try {
-      setLoadingUsers((prevState) => ({
+      setLoadingUsersLock((prevState) => ({
         ...prevState,
         [id]: true,
       }));
-      const response = await fetch(`http://localhost:3000/admin/updateUserStatus/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: status === 'active' ? 'blocked' : 'active' })
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('User status updated successfully', data);
+      const response = await axios.put(
+        `http://localhost:3000/admin/updateUserStatus/${id}`,
+        { status: status === 'active' ? 'blocked' : 'active' }, // Pass body data here
+        {
+          headers: {
+            Authorization: `Bearer ${token}`, // Token sent in headers
+          },
+        }
+      );
+      console.log('User status updated successfully', response.data);
       dispatch(fetchUsers());
 
     } catch (error) {
       console.error('Error updating user status', error);
 
     } finally {
-      setLoadingUsers((prevState) => ({
+      setLoadingUsersLock((prevState) => ({
         ...prevState,
         [id]: false,
       }));
@@ -96,12 +96,25 @@ const AdminDashboard = () => {
 
   const handelDelete = async (id) => {
     try {
-
-      await fetch(`http://localhost:3000/admin/deleteUser/${id}`, { method: 'DELETE' });
+      setLoadingUsersTrash((prevState) => ({
+        ...prevState,
+        [id]: true,
+      }));
+      await axios.delete(`http://localhost:3000/admin/deleteUser/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      });
       dispatch(fetchUsers());
 
     } catch (error) {
       console.error('Error deleting user', error);
+    }
+    finally {
+      setLoadingUsersTrash((prevState) => ({
+        ...prevState,
+        [id]: false,
+      }));
     }
   };
 
@@ -142,6 +155,7 @@ const AdminDashboard = () => {
         data: formData,
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -207,7 +221,7 @@ const AdminDashboard = () => {
             <button
               onClick={() => {
                 setCurrentUser(null);
-                setFormData({username: '', email: '', phone: '', password: '',})
+                setFormData({ username: '', email: '', phone: '', password: '', })
                 setNewUser({ username: '', email: '', phone: '', password: '', });
                 setIsModalOpen(true);
                 setIsEditMode(false);
@@ -225,9 +239,11 @@ const AdminDashboard = () => {
                 className="btn btn-ghost btn-circle avatar hover:bg-[#252525]"
               >
                 <div className="w-10 rounded-full">
+
                   <img
                     alt="Profile"
-                    src={user?.user?.profileImage ? profileImagePath : 'https://i.postimg.cc/JzBWVhW4/my-avatar.png'}
+                    src={user?.profileImage ? profileImagePath : 'https://i.postimg.cc/JzBWVhW4/my-avatar.png'}
+
 
 
                   />
@@ -310,7 +326,7 @@ const AdminDashboard = () => {
                     <div className="flex gap-2">
                       <button
                         onClick={() => {
-                          
+
                           setNewUser(null);
                           setCurrentUser(user);
                           handleUpdate(user);
@@ -318,7 +334,8 @@ const AdminDashboard = () => {
                         }}
                         className="p-2 hover:bg-[#252525] rounded-lg transition-colors text-[#FCBF5E]"
                       >
-                        <Edit2 size={18} />
+                        
+                        <Edit2 size={18}/>
                       </button>
 
                       <AlertDialog>
@@ -327,7 +344,8 @@ const AdminDashboard = () => {
                           <button
                             className="p-2 hover:bg-[#252525] rounded-lg transition-colors text-[#FCBF5E]"
                           >
-                            <Trash2 size={18} />
+                            {loadingUsersTrash[user._id]?(<LoaderCircle className="animate-spin text-[#FCBF5E]" size={24} />):<Trash2 size={18} /> }
+                            
                           </button>
                         </AlertDialogTrigger>
 
@@ -357,14 +375,15 @@ const AdminDashboard = () => {
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
+
                       <button
                         onClick={() => {
                           handelStatus(user._id, user.status);
-                          
+
                         }}
                         className="p-2 hover:bg-[#252525] rounded-lg transition-colors text-[#FCBF5E]"
                       >
-                        {loadingUsers[user._id] ? (<LoaderCircle className="animate-spin text-[#FCBF5E]" size={24} />
+                        {loadingUsersLock[user._id] ? (<LoaderCircle className="animate-spin text-[#FCBF5E]" size={24} />
                         ) : (user.status === 'active' ? <Lock size={18} /> : <Check size={18} />)}
                       </button>
 
